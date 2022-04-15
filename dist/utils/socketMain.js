@@ -11,14 +11,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 class SocketMain {
     constructor(mainSocket, client) {
-        mainSocket.on("connection", socket => {
+        this.mainSocket = mainSocket;
+        this.mainSocket.on("connection", socket => {
             this.onGetNewUser(socket, client);
             this.onGetUserList(socket, client);
+            this.onUserSignUp(socket, client);
         });
     }
     onGetNewUser(socket, client) {
         socket.on("GET_NEW_USER", () => __awaiter(this, void 0, void 0, function* () {
-            const newest_user = yield client.get('newest_user');
+            const newest_user = yield client.lRange("users_list", 0, 0);
             socket.emit("GIVE_NEW_USER", {
                 newest_user
             });
@@ -29,6 +31,15 @@ class SocketMain {
             const user_list = yield client.lRange("users_list", 0, -1);
             socket.emit("GIVE_TOTAL_USERS", {
                 totalUsers: user_list.length
+            });
+        }));
+    }
+    onUserSignUp(socket, client) {
+        socket.on("USER_SIGNUP", (data) => __awaiter(this, void 0, void 0, function* () {
+            const { email } = data;
+            yield client.lPush("users_list", email);
+            this.mainSocket.emit("NEW_USER_SIGNUP", {
+                email
             });
         }));
     }
